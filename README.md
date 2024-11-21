@@ -54,7 +54,7 @@ int Line_Number = 0;
 int plus_degree = 0;
 int count;
 ```
-This code sets up a robot with servos, motors, sensors (light, ultrasonic, and gyro), and a PID controller for compass-based movement. It configures motor pins, light sensor pins, and controls turn direction and line detection timing to guide the robot's navigation.
+
 
 
 - #### **Section 2 [Open Challenge round]**
@@ -86,7 +86,7 @@ void setup() {
   zeroYaw();
 }
 ```
-The setup function initializes serial communication, PID control, motor, servo pins, and sensors. It calibrates the compass with `zeroYaw()`, waits for a button press, and prepares the system for operation by attaching servos and starting the PID control.
+
 
 - #### **Section 3 [Open Challenge round]**
 
@@ -152,103 +152,6 @@ void loop() {
     ;
 }
 ```
-The loop function controls the robot's movement by reading sensor values, adjusting motor speed, and steering using PID feedback. It checks the button status to start/stop, adjusts the robot's direction based on distance errors, and uses servos to steer. When a specific count is reached, it stops.
-
-<br><hr>
-
-## Obstacle Challenge round
-
-In this round, our robot must complete three laps on a track marked with randomly placed green and red traffic signs.
-<br>
-● Red Obstacle: Keep to the right side of the lane.
-<br>
-● Green Obstacle: Keep to the left side of the lane.
-<br>
-The last traffic sign in the second round indicates the next move: a green sign means continue in the same direction for the third round, while a red sign requires turning around to complete the round in the opposite direction. The robot must not move any traffic signs. After finishing the three laps, the robot must find a parking lot and perform parallel parking.
-
-### **The strategy**
-
-In the WRO 2024 Obstacle Challenge round, the robot uses a combination of ultrasonic sensors, a color sensor, a gyro, and an OpenMV Camera to navigate the course, detect and avoid obstacles, and maintain a safe distance from walls. The OpenMV Camera identifies obstacles and their colors, turning right for red obstacles and left for green ones, while the gyro ensures smooth and precise turns.
-
-After completing the second round, the robot uses the OpenMV Camera to search for the purple parking area by detecting its color and comparing its size to the red and green pillars to determine its location. If the last pillar encountered before the end of the third round is red, the robot performs a U-turn; if it is green, the robot continues straight. Once the third round is complete, the robot proceeds to park in the identified purple parking area, accurately positioning itself based on the location recorded by the OpenMV Camera.
-
-<br>
-
-<p align="center">
-If the robot sees red obstacle.
-</p>
-
-</p>
-<p align="center">
-  <img src="https://github.com/ThanyawutII/Test-2/blob/main/obr.jpg" width="700"/>
-</p>
-
-<br>
-
-<p align="center">
-If the robot sees green obstacle
-</p>
-
-</p>
-<p align="center">
-  <img src="https://github.com/ThanyawutII/Test-2/blob/main/obg.jpg" width="700"/>
-</p>
-
-The robot still use the PID to walk, but we added the avoidance degree to avoid the obstacles.
-
-<br>
-
-<p align="center">
-After completing the second round
-</p>
-
-</p>
-<p align="center">
-  <img src="https://github.com/ThanyawutII/Test-2/blob/main/pur.jpg" width="700"/>
-</p>
-
-The robot uses the OpenMV Camera to search for the purple parking area, detecting its color directly and comparing its size to the red and green pillars to determine its position.
-
-<br>
-
-<p align="center">
-If the color of the last pillar is green(continuing straight)
-</p>
-
-</p>
-<p align="center">
-  <img src="https://github.com/ThanyawutII/Test-2/blob/main/con.jpg" width="700"/>
-</p>
-
-<br>
-
-<p align="center">
-If the color of the last pillar is red(U- turn)
-</p>
-
-</p>
-<p align="center">
-  <img src="https://github.com/ThanyawutII/Test-2/blob/main/uturn.jpg" width="700"/>
-</p>
-
-<br>
-
-<p align="center">
-Park in parking area
-</p>
-
-</p>
-<p align="center">
-  <img src="https://github.com/ThanyawutII/Test-2/blob/main/park.jpg" width="700"/>
-</p>
-
-The robot will drive to park in the purple parking area that was detected, using the stored position to accurately align itself.
-
-<br><hr>
-
-### **Flowchart**
-
-<image src="https://github.com/ThanyawutII/Test-2/blob/main/Obstecle%20round.jpg" height = "650">
 
 <hr>
 
@@ -262,7 +165,7 @@ The robot will drive to park in the purple parking area that was detected, using
 #include <Servo.h>
 #include "CameraHandler.h"
 ```
-We declare essential libraries for robot control: `Mapf.h` for Mapping the constrained distance from one range to another, `PID_v2.h` for smooth movement control, `Servo.h` for servo motor positioning, and `CameraHandler.h` for processing camera data. These libraries enable the robot to navigate, adjust movement, and interpret visual information effectively.
+
 
 - #### **Section 2 [Obstacle Challenge round]**
 
@@ -272,7 +175,7 @@ BlobData blob;
 BlobData purple_blob1;
 BlobData purple_blob2;
 ```
-We initializes a `CameraHandler` object called camera to manage the camera’s functions. It also creates three `BlobData` instances: `blob` for storing red and green pillar information, and `purple_blob1` and `purple_blob2` specifically for tracking two separate purple blobs. These variables enable the robot to detect, distinguish, and interact with multiple objects in its environment, particularly purple-colored ones.
+
 
 - #### **Section 3 [Obstacle Challenge round]**
 
@@ -280,7 +183,7 @@ We initializes a `CameraHandler` object called camera to manage the camera’s f
 Servo myservo;
 Servo myservo2;
 ```
-We declare two Servo objects, `myservo` and `myservo2`, allowing control of two individual servo motors.
+
 
 - #### **Section 4 [Obstacle Challenge round]**
 
@@ -301,7 +204,7 @@ const MotorContrl MotorPin[] = { E1Pin, M1Pin };
 const int Forward = LOW;
 const int Backward = HIGH;
 ```
-We sets up motor control using `E1Pin` and `M1Pin` for power and direction. The `MotorContrl` structure and `MotorPin` array organize these pins, while Forward and Backward constants control motor rotation, making direction easy to manage.
+
 
 - #### **Section 5 [Obstacle Challenge round]**
 
@@ -314,7 +217,7 @@ int const ULTRA_PIN_II = 10;
 int const STEER_SRV = 27;
 int const ULTRA_SRV = 25;
 ```
-We connect Red sensor to port 6, Blue sensor to port 7, Button to port 8, Ultrasonic that measure distance between robot and the wall to port 9, Ultrasonic in front of the robot to port 8+10, Servo for steering port 27, and the last one, Servo for turning ultrasonic port 25.
+
 
 - #### **Section 6 [Obstacle Challenge round]**
 
@@ -322,7 +225,7 @@ We connect Red sensor to port 6, Blue sensor to port 7, Button to port 8, Ultras
 float pvYaw;
 uint8_t rxCnt = 0, rxBuf[8];
 ```
-We defines `pvYaw` as a float to store the robot's yaw (orientation) angle. `rxCnt` is an 8-bit integer to count received data, and `rxBuf` is an 8-byte array to hold incoming data.
+
 
 - #### **Section 7 [Obstacle Challenge round]**
 
@@ -358,7 +261,7 @@ char lastfound = 'U';
 char TURN = 'U';
 char ULTRA_DIR = 'R';
 ```
-This code above, we defines several variables used for various control and tracking functions. `long` is used for define time variable. `float` for variable that has decimal. `int` for variable that is integer. `bool` for variable that its output is true and false. `char` is for variable that is used to store data as a single character.
+
 
 - #### **Section 8 [Obstacle Challenge round]**
 
@@ -370,7 +273,7 @@ void setup() {
   zeroYaw();
 }
 ```
-In `void setup` we initialize every part of our robot (function mentioned in another page) and then wait until the button is pressed. After that, reset the compass.
+
 
 - #### **Section 9 [Obstacle Challenge round]**
 
@@ -395,7 +298,7 @@ void loop() {
     purple_blob2 = tempBlob;
   }
 ```
-This code processes data from the camera to identify and sort detected blobs by color. It first updates the camera data, then retrieves the current blob as `tempBlob`. The code checks the color of `tempBlob` based on its "signature": if it’s red (1), it sets `last_found_signature` to 1 and stores `tempBlob` as blob. If it’s green (2), it does the same but sets `last_found_signature` to 2. Purple blobs are handled separately, with `purple_blob1` storing blobs marked as 3 and `purple_blob2` storing blobs marked as 4.
+
 
 - #### **Section 10 [Obstacle Challenge round]**
 
