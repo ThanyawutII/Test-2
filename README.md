@@ -1,3 +1,47 @@
+### `Get distance`
+
+```c++
+float getDistance() {
+  float raw_distance = mapf(analogRead(ULTRA_PIN), 0, 1023, 0, 500);
+  if (TURN == 'L') {
+    raw_distance += 0;
+  } else if (TURN == 'R') {
+    raw_distance -= 0;
+  }
+  return min(raw_distance, 50);
+}
+
+float getDistanceII() {
+  float raw_distance = mapf(analogRead(ULTRA_PIN_II), 0, 1023, 0, 500);
+  if (TURN == 'L') {
+    raw_distance += 0;
+  } else if (TURN == 'R') {
+    raw_distance -= 0;
+  }
+  return min(raw_distance, 50);
+}
+```
+
+### `Get IMU`
+
+```c++
+bool getIMU() {
+  while (Serial1.available()) {
+    rxBuf[rxCnt] = Serial1.read();
+    if (rxCnt == 0 && rxBuf[0] != 0xAA) return;
+    rxCnt++;
+    if (rxCnt == 8) {
+      rxCnt = 0;
+      if (rxBuf[0] == 0xAA && rxBuf[7] == 0x55) {
+        pvYaw = (int16_t)(rxBuf[1] << 8 | rxBuf[2]) / 100.f;
+        pvYaw = wrapValue(pvYaw + plus_degree, -179, 180);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+```
 
 
 ### `Zero Yaw`
