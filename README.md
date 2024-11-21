@@ -1,3 +1,738 @@
+```c++
+#include <Mapf.h>
+#include <PID_v2.h>
+#include <Wire.h>
+#include <Servo.h>
+
+Servo myservo;
+Servo myservo2;
+
+const int E1Pin = 10;
+const int M1Pin = 12;
+
+/**inner definition**/
+typedef struct {
+  byte enPin;
+  byte directionPin;
+} MotorContrl;
+
+const int M1 = 0;
+const int MotorNum = 1;
+
+const MotorContrl MotorPin[] = { { E1Pin, M1Pin } };
+
+const int Forward = LOW;
+const int Backward = HIGH;
+
+
+//Button
+int BUTTON = A8;
+
+//PID
+PID_v2 compassPID(0.7, 0.0001, 0.05, PID::Direct);
+
+//Ultra
+int const ULTRA_PIN = A9;
+int const ULTRA_PIN_II = A10;
+
+//INEX Gyro
+float pvYaw;
+uint8_t rxCnt = 0, rxBuf[8];
+
+//  Light Sensors
+int const RED_SEN = A6;
+int const BLUE_SEN = A7;
+
+// Servo
+int const STEER_SRV = 27;  //16
+int const ULTRA_SRV = 25;  //23
+
+//Others
+char TURN = 'U';
+long halt_detect_line_timer;
+int Line_Number = 0;
+int plus_degree = 0;
+int count;
+```
+
+
+
+- #### **Section 2 [Open Challenge round]**
+
+```c++
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  Serial1.begin(9600);
+  compassPID.Start(0, 0, 0);
+  compassPID.SetOutputLimits(-180, 180);
+  compassPID.SetSampleTime(10);
+  pinMode(STEER_SRV, OUTPUT);
+  pinMode(ULTRA_SRV, OUTPUT);
+  pinMode(ULTRA_PIN, INPUT);
+  pinMode(RED_SEN, INPUT);
+  pinMode(BLUE_SEN, INPUT);
+  pinMode(BUTTON, INPUT);
+  initMotor();
+  while (!Serial)
+    ;
+  myservo.attach(ULTRA_SRV, 500, 2400);
+  myservo2.attach(STEER_SRV, 500, 2500);
+  steering_servo(0);
+  ultra_servo(0, 'L');
+  // check_leds();
+  while (analogRead(BUTTON) > 500)
+    ;
+  zeroYaw();
+}
+```
+
+
+- #### **Section 3 [Open Challenge round]**
+
+```c++
+void loop() {
+  float baseDesiredDistance = 25;
+  while (analogRead(BUTTON) > 500) {
+    getIMU();
+    motor(50);
+    Color_detection();
+    float desiredDistance = baseDesiredDistance;  // Start with the base value
+    if (TURN == 'L') {
+      desiredDistance = 16;
+    } else if (TURN == 'R') {
+      desiredDistance = 17.5;
+    }
+    float distanceError = getDistance() - desiredDistance;
+    float deadband = 2.0;
+    if (abs(distanceError) < deadband) {
+      distanceError = 0.0;
+    }
+    float directionFactor = (TURN == 'R') ? -1.0 : 1.0;
+    float adjustedYaw = pvYaw - (distanceError * directionFactor);
+    float pidOutput = compassPID.Run(adjustedYaw);
+    steering_servo(pidOutput);
+    ultra_servo(pvYaw, TURN);
+    // Serial.println(getDistance());
+
+    if (count >= 12) {
+      long timer01 = millis();
+      while (millis() - timer01 < 800) {
+        motor(100);
+        getIMU();
+        Color_detection();
+        float desiredDistance = baseDesiredDistance;  // Start with the base value
+        if (TURN == 'L') {
+          desiredDistance = 12;
+        } else if (TURN == 'R') {
+          desiredDistance = 14.5;
+        }
+        float distanceError = getDistance() - desiredDistance;
+        float deadband = 2.0;
+        if (abs(distanceError) < deadband) {
+          distanceError = 0.0;
+        }
+        float directionFactor = (TURN == 'L') ? -1.0 : 1.0;
+        float adjustedYaw = pvYaw + (distanceError * directionFactor);
+        float pidOutput = compassPID.Run(adjustedYaw);
+        steering_servo(pidOutput);
+        ultra_servo(pvYaw, TURN);
+      }
+      motor(0);
+      while (true) {
+      }
+    }
+  }
+  motor(0);
+  while (analogRead(BUTTON) <= 500) {
+  }
+  while (analogRead(BUTTON) > 500)
+    ;
+  while (analogRead(BUTTON) <= 500)
+    ;
+}
+```
+
+<hr>
+
+### **Source Code**
+
+- #### **Section 1 [Obstacle Challenge round]**
+
+```c++
+#include <Mapf.h>
+#include <PID_v2.h>
+#include <Servo.h>
+#include "CameraHandler.h"
+```
+
+
+- #### **Section 2 [Obstacle Challenge round]**
+
+```c++
+CameraHandler camera;
+BlobData blob;
+BlobData purple_blob1;
+BlobData purple_blob2;
+```
+
+
+- #### **Section 3 [Obstacle Challenge round]**
+
+```c++
+Servo myservo;
+Servo myservo2;
+```
+
+
+- #### **Section 4 [Obstacle Challenge round]**
+
+```c++
+const int E1Pin = 10;
+const int M1Pin = 12;
+
+typedef struct {
+  byte enPin;
+  byte directionPin;
+} MotorContrl;
+
+const int M1 = 0;
+const int MotorNum = 1;
+
+const MotorContrl MotorPin[] = { E1Pin, M1Pin };
+
+const int Forward = LOW;
+const int Backward = HIGH;
+```
+
+
+- #### **Section 5 [Obstacle Challenge round]**
+
+```c++
+int const RED_SEN = 6;
+int const BLUE_SEN = 7;
+int const BUTTON = 8;
+int const ULTRA_PIN = 9;
+int const ULTRA_PIN_II = 10;
+int const STEER_SRV = 27;
+int const ULTRA_SRV = 25;
+```
+
+
+- #### **Section 6 [Obstacle Challenge round]**
+
+```c++
+float pvYaw;
+uint8_t rxCnt = 0, rxBuf[8];
+```
+
+
+- #### **Section 7 [Obstacle Challenge round]**
+
+```c++
+long halt_detect_line_timer = 0;
+long halt_detect_parking = 0;
+long MV_timer = 0;
+
+float found_parkAngle = 0;
+float absYaw;
+float uturnYaw;
+float avoidance_degree;
+
+int last_found_signature;
+int plus_degree = 0;
+int count_line = 0;
+int parking_step = 0;
+int parkingsection = -1;
+int side = 1;
+int hi = 0;
+int angle = 115;
+
+bool startpark = false;
+bool parking = false;
+bool next = false;
+bool foundpark = false;
+bool uturn = false;
+
+char currentBlock = 'N';
+char previousBlock = 'N';
+char lastblock;
+char lastfound = 'U';
+char TURN = 'U';
+char ULTRA_DIR = 'R';
+```
+
+
+- #### **Section 8 [Obstacle Challenge round]**
+
+```c++
+void setup() {
+  initialize_everything();
+  while (analogRead(BUTTON) > 500)
+    ;
+  zeroYaw();
+}
+```
+
+
+- #### **Section 9 [Obstacle Challenge round]**
+
+```c++
+void loop() {
+  // Calculate camera errors
+  camera.handleIncomingData();
+  BlobData tempBlob = camera.getBlobData();
+  if (tempBlob.signature == 1) {
+    // RED
+    last_found_signature = 1;
+    blob = tempBlob;
+
+  } else if (tempBlob.signature == 2) {
+    // GREEN
+    last_found_signature = 2;
+    blob = tempBlob;
+
+  } else if (tempBlob.signature == 3) {
+    purple_blob1 = tempBlob;
+  } else if (tempBlob.signature == 4) {
+    purple_blob2 = tempBlob;
+  }
+```
+
+
+- #### **Section 10 [Obstacle Challenge round]**
+
+```c++
+ float avoidance_degree = 0;
+  if (tempBlob.signature == 3 && tempBlob.width / 3.9 > blob.width) {
+    avoidance_degree = calculate_avoidance(tempBlob.signature, tempBlob.width, tempBlob.x, tempBlob.y) * -2;
+  } else {
+    avoidance_degree = calculate_avoidance(blob.signature, blob.width, blob.x, blob.y);
+  }
+```
+
+
+
+- #### **Section 11 [Obstacle Challenge round]**
+```c++
+  int desiredDistance = parking_step == 0 ? (camera.isBlockFound() ? 20 : 40) : 15;
+  float distanceError = getDistance() - desiredDistance;
+  float frontDistance = getDistanceII();
+
+  float deadband = 2.0;
+  if (abs(distanceError) < deadband) {
+    distanceError = 0.0;
+  }
+  float directionFactor = (ULTRA_DIR == 'R') ? -1.0 : 1.0;
+  float adjustedYaw = pvYaw - clamp(distanceError * directionFactor, -20, 20);
+  float pidOutput = compassPID.Run(adjustedYaw);
+```
+
+
+- #### **Section 12 [Obstacle Challenge round]**
+
+```c++
+  // TEST PARKING
+
+  if (count_line >= 8 && count_line < 12 && tempBlob.signature == 3 && parkingsection == -1) {
+    parkingsection = count_line % 4;
+  } else if (count_line > 12) {
+    if (parkingsection == 0) {
+      parkingsection = 4;
+    }
+  }
+```
+
+
+- #### **Section 13 [Obstacle Challenge round]**
+
+```c++
+if (parking_step == 1) {
+    ULTRA_DIR = TURN == 'R' ? 'L' : 'R';
+  }
+```
+
+
+- #### **Section 14 [Obstacle Challenge round]**
+
+```c++
+int parking_degree = ((purple_blob1.x + purple_blob2.x) / 2 - 160) * -0.5;
+  int final_degree = camera.isBlockFound() ? mapf(min(max(getDistance(), 15), desiredDistance), 15, desiredDistance, pidOutput, avoidance_degree) : pidOutput;
+```
+
+
+- #### **Section 15 [Obstacle Challenge round]**
+
+```c++
+ getIMU();
+  color_detection();
+```
+
+- #### **Section 16 [Obstacle Challenge round]**
+
+```c++
+ switch (parking_step) {
+    case 1:
+
+      if (!startpark) {
+        halt_detect_parking = millis();
+        startpark = true;
+      }
+      if (tempBlob.signature != 3 && purple_blob1.width < 70) {
+        steering_servo(pidOutput);
+        ultra_servo(pvYaw, ULTRA_DIR);
+        motor(40);
+      } else {
+        parking_step = 2;
+        startpark = false;
+      }
+      break;
+    case 2:
+      halt_detect_line_timer = millis();
+      if (!startpark) {
+        halt_detect_parking = millis();
+        startpark = true;
+      }
+      if (millis() - halt_detect_parking < 1400) {
+        steering_servo(final_degree);
+        ultra_servo(0, ULTRA_DIR);
+        motor(40);
+      } else {
+        parking_step = 3;
+        startpark = false;
+        if (TURN == 'L') {
+          plus_degree += 90;
+        } else {
+          plus_degree -= 90;
+        }
+      }
+
+      break;
+
+    case 3:
+
+      if (!startpark) {
+        halt_detect_parking = millis();
+        startpark = true;
+      }
+      if (millis() - halt_detect_parking < 2000) {
+        steering_servo(pvYaw);
+        ultra_servo(0, ULTRA_DIR);
+        motor(-40);
+      } else {
+        parking_step = 4;
+        startpark = false;
+      }
+
+      break;
+
+    case 4:
+      if (frontDistance > 10) {
+        steering_servo(mapf(clamp(frontDistance, 10, 20), 20, 10, parking_degree, 0));
+        motor(mapf(clamp(frontDistance, 10, 20), 20, 10, 35, 30));
+      } else {
+        motor(30);
+        delay(500);
+        motor(0);
+        while (true)
+          ;
+      }
+      break;
+
+    case 5:
+      if (count_line >= 13 && count_line < 12 + parkingsection) {
+        motor_and_steer(pidOutput);
+        ultra_servo(pvYaw, TURN);
+      } else {
+        parking_step = 1;
+      }
+      break;
+
+    default:
+      motor_and_steer(final_degree);
+      ultra_servo(pvYaw, ULTRA_DIR);
+      if (count_line > 12 && parkingsection != -1) {
+        parking_step = 5;
+      }
+      break;
+  }
+```
+
+- #### **Section 17 [Obstacle Challenge round]**
+
+```c++
+uTurn();
+```
+
+
+<hr><br>
+
+### Function
+
+
+### `Initialize Everything`
+
+```c++
+void initialize_everything() {
+  Serial.begin(19200);
+  Serial1.begin(19200);
+  Serial2.begin(19200);
+  Serial3.begin(19200);
+
+  compassPID.Start(0, 0, 0);
+  compassPID.SetOutputLimits(-180, 180);
+  compassPID.SetSampleTime(10);
+
+  pinMode(STEER_SRV, OUTPUT);
+  pinMode(ULTRA_SRV, OUTPUT);
+  pinMode(ULTRA_PIN, INPUT);
+  pinMode(RED_SEN, INPUT);
+  pinMode(BLUE_SEN, INPUT);
+  pinMode(BUTTON, INPUT);
+
+  initMotor();
+  while (!Serial)
+    ;
+  myservo.attach(ULTRA_SRV, 500, 2400);
+  myservo2.attach(STEER_SRV, 500, 2500);
+  steering_servo(0);
+  ultra_servo(0, 'U');
+}
+```
+
+
+### `Degrees to radians`
+
+```c++
+float degreesToRadians(double degrees) {
+  return degrees * PI / 180.0;
+}
+
+float radiansToDegree(double raidans) {
+  return raidans / PI * 180.0;
+}
+```
+
+
+### `Avoidance Calculation(based on size and position)`
+
+```c++
+float _cal_avoidance(char mode, int targetWidth, int objectWidth, int blockCenterX, int blockCenterY) {
+  float focalLength = 2.8;
+  float cameraFOV = 70;
+
+  float distance = (targetWidth * focalLength * 100) / objectWidth;
+
+  float deltaX = blockCenterX - (320 / 2);
+  float deltaY = blockCenterY - (240 / 2);
+
+  float detected_degree = -deltaX * cameraFOV / 320.0;
+
+  float blockPositionX = distance * sin(degreesToRadians(detected_degree));
+  float blockPositionY = distance * cos(degreesToRadians(detected_degree)) - 10;
+
+  ULTRA_DIR = mode;
+
+  if (mode == 'L') {
+    return max(radiansToDegree(atan2(blockPositionX + (targetWidth / 2 + 10), blockPositionY)), 5) * 1.1;
+  } else if (mode == 'R') {
+    return min(radiansToDegree(atan2(blockPositionX - (targetWidth / 2 + 10), blockPositionY)), -5) * 0.9;
+  } else {
+    return 0;
+  }
+}
+```
+
+
+### `Avoidance Calculation(based on signature)`
+
+```c++
+float calculate_avoidance(int signature, int objectWidth, int blockCenterX, int blockCenterY) {
+  int avoidance_degree = 0;
+
+  if (signature == 2) {
+    avoidance_degree = _cal_avoidance('L', 5, objectWidth, blockCenterX, blockCenterY);
+  } else if (signature == 1) {
+    avoidance_degree = _cal_avoidance('R', 5, objectWidth, blockCenterX, blockCenterY);
+  } else if (signature == 3 || signature == 4) {
+    avoidance_degree = _cal_avoidance(TURN, 20, objectWidth, blockCenterX, blockCenterY);
+  }
+  return avoidance_degree;
+}
+```
+
+
+### `Wrap value`
+
+```c++
+int wrapValue(int value, int minValue, int maxValue) {
+  int range = maxValue - minValue + 1;
+  if (value < minValue) {
+    value += range * ((minValue - value) / range + 1);
+  }
+  return minValue + (value - minValue) % range;
+}
+```
+
+### `Initiate motor`
+
+```c++
+void initMotor() {
+  int i;
+  for (i = 0; i < MotorNum; i++) {
+    digitalWrite(MotorPin[i].enPin, LOW);
+
+    pinMode(MotorPin[i].enPin, OUTPUT);
+    pinMode(MotorPin[i].directionPin, OUTPUT);
+  }
+}
+```
+
+
+### `Set motor direction`
+
+```c++
+void setMotorDirection(int motorNumber, int direction) {
+  digitalWrite(MotorPin[motorNumber].directionPin, direction);
+}
+```
+
+
+### `Set motor speed`
+
+```c++
+inline void setMotorSpeed(int motorNumber, int speed) {
+  analogWrite(MotorPin[motorNumber].enPin, 255.0 * (speed / 100.0));
+}
+```
+
+
+### `Motor`
+
+```c++
+void motor(int speed) {
+  if (speed > 0) {
+    setMotorDirection(M1, Forward);
+    setMotorSpeed(M1, speed);
+  } else {
+    setMotorDirection(M1, Backward);
+    setMotorSpeed(M1, speed);
+  }
+}
+```
+
+### `Color detection`
+
+```c++
+void color_detection() {
+  int blue_value = analogRead(BLUE_SEN);
+  if (TURN == 'U') {
+    int red_value = analogRead(RED_SEN);
+    if (blue_value < 600 || red_value < 600) {
+      int lowest_red_sen = red_value;
+      long timer_line = millis();
+      while (millis() - timer_line < 100) {
+        int red_value = analogRead(RED_SEN);
+        if (red_value < lowest_red_sen) {
+          lowest_red_sen = red_value;
+        }
+      }
+      if (lowest_red_sen > 600) {
+        TURN = 'L';
+        plus_degree += 90;
+      } else {
+        TURN = 'R';
+        plus_degree -= 90;
+      }
+      halt_detect_line_timer = millis();
+      count_line++;
+    }
+  } else {
+    if (millis() - halt_detect_line_timer > 1800) {
+      if (blue_value < 600) {
+        if (TURN == 'R') {
+          plus_degree -= 90;
+        } else {
+          plus_degree += 90;
+        }
+        halt_detect_line_timer = millis();
+        count_line++;
+      }
+    }
+  }
+}
+```
+
+
+```c++
+void steering_servo(int degree) {
+  myservo2.write((90 + max(min(degree, 50), -50)) / 2);
+}
+```
+
+
+### `Ultrasonic Servo`
+
+```c++
+void ultra_servo(int degree, char mode_steer) {
+  int middle_degree = 0;
+  if (mode_steer == 'F') {
+    middle_degree = 150;
+  } else if (mode_steer == 'R') {
+    middle_degree = 225;
+  } else if (mode_steer == 'L' || mode_steer == 'U') {
+    middle_degree = 80;
+  } else {
+  }
+  myservo.write(mapf(max(min(middle_degree + degree, 225), 45), 0, 270, 0, 180));
+}
+```
+
+### `Get distance`
+
+```c++
+float getDistance() {
+  float raw_distance = mapf(analogRead(ULTRA_PIN), 0, 1023, 0, 500);
+  if (TURN == 'L') {
+    raw_distance += 0;
+  } else if (TURN == 'R') {
+    raw_distance -= 0;
+  }
+  return min(raw_distance, 50);
+}
+
+float getDistanceII() {
+  float raw_distance = mapf(analogRead(ULTRA_PIN_II), 0, 1023, 0, 500);
+  if (TURN == 'L') {
+    raw_distance += 0;
+  } else if (TURN == 'R') {
+    raw_distance -= 0;
+  }
+  return min(raw_distance, 50);
+}
+```
+
+
+### `Get IMU`
+
+```c++
+bool getIMU() {
+  while (Serial1.available()) {
+    rxBuf[rxCnt] = Serial1.read();
+    if (rxCnt == 0 && rxBuf[0] != 0xAA) return;
+    rxCnt++;
+    if (rxCnt == 8) {
+      rxCnt = 0;
+      if (rxBuf[0] == 0xAA && rxBuf[7] == 0x55) {
+        pvYaw = (int16_t)(rxBuf[1] << 8 | rxBuf[2]) / 100.f;
+        pvYaw = wrapValue(pvYaw + plus_degree, -179, 180);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+```
 
 
 ### `Zero Yaw`
